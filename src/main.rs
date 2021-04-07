@@ -1,7 +1,38 @@
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ChainSpec {
+    pallet_balances: PalletBalances,
+    pallet_session: PalletSession,
+    pallet_octopus_appchain: PalletOctopusAppchain,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct PalletBalances {
+    balances: Vec<(String, u64)>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct SessionKeys {
+    aura: String,
+    grandpa: String,
+    octopus: String,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct PalletSession {
+    keys: Vec<(String, String, SessionKeys)>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct PalletOctopusAppchain {
+    validators: Vec<(String, u64)>,
+}
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -38,23 +69,6 @@ struct Key {
     address: String,
 }
 
-#[derive(Debug, Default)]
-struct Validator {
-    id: Key,
-    aura: Key,
-    gran: Key,
-    octo: Key,
-    peer_id: String,
-}
-
-use serde_derive::Serialize;
-
-#[derive(Serialize)]
-struct Config {
-    ip: String,
-    port: Option<u16>,
-}
-
 fn main() {
     let opt = Opt::from_args();
     println!("{:#?}", opt);
@@ -69,6 +83,7 @@ fn main() {
     };
     println!("{} detected.", s.trim());
 
+    let mut chainspec = ChainSpec::default();
     let base_path = opt.output.join(opt.appchain);
     for i in 0..opt.number {
         let backup_path = base_path.join("keys_backup").join(format!("{}", i));
@@ -77,11 +92,10 @@ fn main() {
         fs::create_dir_all(&backup_path).unwrap();
         fs::create_dir_all(&octoup_path).unwrap();
 
-        let mut val = Validator::default();
-        val.id = generate_key(&backup_path, &octoup_path, "validator", "sr25519");
-        val.aura = generate_key(&backup_path, &octoup_path, "aura", "sr25519");
-        val.gran = generate_key(&backup_path, &octoup_path, "gran", "ed25519");
-        val.octo = generate_key(&backup_path, &octoup_path, "octo", "sr25519");
+        let id = generate_key(&backup_path, &octoup_path, "validator", "sr25519");
+        let aura = generate_key(&backup_path, &octoup_path, "aura", "sr25519");
+        let gran = generate_key(&backup_path, &octoup_path, "gran", "ed25519");
+        let octo = generate_key(&backup_path, &octoup_path, "octo", "sr25519");
 
         let output = Command::new("subkey")
             .arg("generate-node-key")
@@ -97,19 +111,30 @@ fn main() {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
         };
-        val.peer_id = s.trim().to_string();
-        println!("validator-{}: {:#?}", i, val);
+        let _peer_id = s.trim().to_string();
+        chainspec
+            .pallet_balances
+            .balances
+            .push((id.address.clone(), 100));
+        let session_keys = SessionKeys {
+            aura: aura.address,
+            grandpa: gran.address,
+            octopus: octo.address,
+        };
+        chainspec
+            .pallet_session
+            .keys
+            .push((id.address.clone(), id.address.clone(), session_keys));
+        chainspec
+            .pallet_octopus_appchain
+            .validators
+            .push((id.address, 100));
     }
 
-    let config = Config {
-        ip: "127.0.0.1".to_string(),
-        port: None,
-    };
-
-    let toml = toml::to_string(&config).unwrap();
     let chainspec_path = base_path.join("keys_chainspec");
     fs::create_dir_all(&chainspec_path).unwrap();
-    fs::write(chainspec_path.join("chainspec.toml"), toml).unwrap();
+    let json = serde_json::to_string_pretty(&chainspec).unwrap();
+    fs::write(chainspec_path.join("chainspec.json"), json).unwrap();
 }
 
 fn generate_key(backup_path: &PathBuf, octoup_path: &PathBuf, typ: &str, scheme: &str) -> Key {

@@ -3,7 +3,9 @@
 octokey is a tool for handling substrate keys.
 
 The files in the keys_backup are backups for octopus team.
+
 The files in the keys_octoup are necessary to run octoup.
+
 The file in the keys_chainspec is used to update chainspec.json
 
 ```
@@ -40,7 +42,7 @@ barnacle
 │       ├── peer-id
 │       └── validator
 ├── keys_chainspec
-│   └── chainspec.toml
+│   └── chainspec.json
 └── keys_octoup
     ├── 0
     │   ├── aura.json
