@@ -9,34 +9,38 @@ The files in the keys_octoup are necessary to run octoup.
 The file in the keys_chainspec is used to update chainspec.json
 
 ```
-$ cargo run -- --appchain barnacle
-$ tree barnacle
-barnacle
+$ cargo run
+$ tree keys/
+keys/
 ├── keys_backup
 │   ├── 0
-│   │   ├── aura
+│   │   ├── babe
 │   │   ├── gran
+│   │   ├── imon
 │   │   ├── node-key
 │   │   ├── octo
 │   │   ├── peer-id
 │   │   └── validator
 │   ├── 1
-│   │   ├── aura
+│   │   ├── babe
 │   │   ├── gran
+│   │   ├── imon
 │   │   ├── node-key
 │   │   ├── octo
 │   │   ├── peer-id
 │   │   └── validator
 │   ├── 2
-│   │   ├── aura
+│   │   ├── babe
 │   │   ├── gran
+│   │   ├── imon
 │   │   ├── node-key
 │   │   ├── octo
 │   │   ├── peer-id
 │   │   └── validator
 │   └── 3
-│       ├── aura
+│       ├── babe
 │       ├── gran
+│       ├── imon
 │       ├── node-key
 │       ├── octo
 │       ├── peer-id
@@ -45,29 +49,33 @@ barnacle
 │   └── chainspec.json
 └── keys_octoup
     ├── 0
-    │   ├── aura.json
+    │   ├── babe.json
     │   ├── gran.json
+    │   ├── imon.json
     │   ├── node-key
     │   ├── octo.json
     │   └── peer-id
     ├── 1
-    │   ├── aura.json
+    │   ├── babe.json
     │   ├── gran.json
+    │   ├── imon.json
     │   ├── node-key
     │   ├── octo.json
     │   └── peer-id
     ├── 2
-    │   ├── aura.json
+    │   ├── babe.json
     │   ├── gran.json
+    │   ├── imon.json
     │   ├── node-key
     │   ├── octo.json
     │   └── peer-id
     └── 3
-        ├── aura.json
+        ├── babe.json
         ├── gran.json
+        ├── imon.json
         ├── node-key
         ├── octo.json
         └── peer-id
 
-11 directories, 45 files
+11 directories, 53 files
 ```

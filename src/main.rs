@@ -19,8 +19,9 @@ struct PalletBalances {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct SessionKeys {
-    aura: String,
+    babe: String,
     grandpa: String,
+    im_online: String,
     octopus: String,
 }
 
@@ -49,10 +50,6 @@ struct Opt {
     #[structopt(short, long, parse(from_occurrences))]
     verbose: u8,
 
-    /// The name of appchain
-    #[structopt(short, long)]
-    appchain: String,
-
     /// Number of validators
     #[structopt(short, long, default_value = "4")]
     number: u32,
@@ -76,7 +73,7 @@ fn main() {
     let output = Command::new("subkey")
         .arg("-V")
         .output()
-        .expect("failed to execute process");
+        .expect("command subkey not found");
     let s = match std::str::from_utf8(&output.stdout) {
         Ok(v) => v,
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
@@ -84,7 +81,7 @@ fn main() {
     println!("{} detected.", s.trim());
 
     let mut chainspec = ChainSpec::default();
-    let base_path = opt.output.join(opt.appchain);
+    let base_path = opt.output.join("keys");
     for i in 0..opt.number {
         let backup_path = base_path.join("keys_backup").join(format!("{}", i));
         let octoup_path = base_path.join("keys_octoup").join(format!("{}", i));
@@ -93,8 +90,9 @@ fn main() {
         fs::create_dir_all(&octoup_path).unwrap();
 
         let id = generate_key(&backup_path, &octoup_path, "validator", "sr25519");
-        let aura = generate_key(&backup_path, &octoup_path, "aura", "sr25519");
+        let babe = generate_key(&backup_path, &octoup_path, "babe", "sr25519");
         let gran = generate_key(&backup_path, &octoup_path, "gran", "ed25519");
+        let imon = generate_key(&backup_path, &octoup_path, "imon", "sr25519");
         let octo = generate_key(&backup_path, &octoup_path, "octo", "sr25519");
 
         let output = Command::new("subkey")
@@ -115,10 +113,11 @@ fn main() {
         chainspec
             .pallet_balances
             .balances
-            .push((id.address.clone(), 100));
+            .push((id.address.clone(), 10_000_000_000_000_000));
         let session_keys = SessionKeys {
-            aura: aura.address,
+            babe: babe.address,
             grandpa: gran.address,
+            im_online: imon.address,
             octopus: octo.address,
         };
         chainspec
