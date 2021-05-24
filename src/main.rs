@@ -162,7 +162,7 @@ fn generate_key(backup_path: &PathBuf, octoup_path: &PathBuf, typ: &str, scheme:
             line if line.starts_with("Public key (hex):") => {
                 key.public_key = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
             }
-            line if line.starts_with("SS58 Address:") => {
+            line if line.starts_with("Public key (SS58):") => {
                 key.address = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
             }
             _ => {}
