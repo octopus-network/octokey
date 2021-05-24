@@ -15,6 +15,7 @@ keys/
 ├── keys_backup
 │   ├── 0
 │   │   ├── babe
+│   │   ├── beef
 │   │   ├── gran
 │   │   ├── imon
 │   │   ├── node-key
@@ -23,6 +24,7 @@ keys/
 │   │   └── validator
 │   ├── 1
 │   │   ├── babe
+│   │   ├── beef
 │   │   ├── gran
 │   │   ├── imon
 │   │   ├── node-key
@@ -31,6 +33,7 @@ keys/
 │   │   └── validator
 │   ├── 2
 │   │   ├── babe
+│   │   ├── beef
 │   │   ├── gran
 │   │   ├── imon
 │   │   ├── node-key
@@ -39,6 +42,7 @@ keys/
 │   │   └── validator
 │   └── 3
 │       ├── babe
+│       ├── beef
 │       ├── gran
 │       ├── imon
 │       ├── node-key
@@ -50,6 +54,7 @@ keys/
 └── keys_octoup
     ├── 0
     │   ├── babe.json
+    │   ├── beef.json
     │   ├── gran.json
     │   ├── imon.json
     │   ├── node-key
@@ -57,6 +62,7 @@ keys/
     │   └── peer-id
     ├── 1
     │   ├── babe.json
+    │   ├── beef.json
     │   ├── gran.json
     │   ├── imon.json
     │   ├── node-key
@@ -64,6 +70,7 @@ keys/
     │   └── peer-id
     ├── 2
     │   ├── babe.json
+    │   ├── beef.json
     │   ├── gran.json
     │   ├── imon.json
     │   ├── node-key
@@ -71,11 +78,12 @@ keys/
     │   └── peer-id
     └── 3
         ├── babe.json
+        ├── beef.json
         ├── gran.json
         ├── imon.json
         ├── node-key
         ├── octo.json
         └── peer-id
 
-11 directories, 53 files
+11 directories, 61 files
 ```

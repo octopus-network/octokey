@@ -22,6 +22,7 @@ struct SessionKeys {
     babe: String,
     grandpa: String,
     im_online: String,
+    beefy: String,
     octopus: String,
 }
 
@@ -93,6 +94,7 @@ fn main() {
         let babe = generate_key(&backup_path, &octoup_path, "babe", "sr25519");
         let gran = generate_key(&backup_path, &octoup_path, "gran", "ed25519");
         let imon = generate_key(&backup_path, &octoup_path, "imon", "sr25519");
+        let beef = generate_key(&backup_path, &octoup_path, "beef", "ecdsa");
         let octo = generate_key(&backup_path, &octoup_path, "octo", "sr25519");
 
         let output = Command::new("subkey")
@@ -118,6 +120,7 @@ fn main() {
             babe: babe.address,
             grandpa: gran.address,
             im_online: imon.address,
+            beefy: beef.address,
             octopus: octo.address,
         };
         chainspec
