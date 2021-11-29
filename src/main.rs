@@ -18,13 +18,14 @@ struct Genesis {
 #[serde(rename_all = "camelCase")]
 struct Runtime {
 	balances: Balances,
-	session: Session,
 	octopus_appchain: OctopusAppchain,
+	session: Session,
+	sudo: Sudo,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Balances {
-	balances: Vec<(String, u64)>,
+	balances: Vec<(String, u128)>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -39,6 +40,11 @@ struct SessionKeys {
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Session {
 	keys: Vec<(String, String, SessionKeys)>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct Sudo {
+	key: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -80,6 +86,10 @@ struct Key {
 fn main() {
 	let opt = Opt::from_args();
 	println!("{:#?}", opt);
+	if opt.number < 1 {
+		println!("The number of validators should be greater than 1.");
+		return;
+	}
 
 	let output = Command::new("subkey").arg("-V").output().expect("command subkey not found");
 	let s = match std::str::from_utf8(&output.stdout) {
@@ -119,12 +129,22 @@ fn main() {
 			Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 		};
 		let _peer_id = s.trim().to_string();
-		chainspec
-			.genesis
-			.runtime
-			.balances
-			.balances
-			.push((id.address.clone(), 10_000_000_000_000_000_000));
+		if i == 0 {
+			chainspec
+				.genesis
+				.runtime
+				.balances
+				.balances
+				.push((id.address.clone(), 60_000_000_000_000_000_000));
+			chainspec.genesis.runtime.sudo = Sudo { key: id.address.clone() };
+		} else {
+			chainspec
+				.genesis
+				.runtime
+				.balances
+				.balances
+				.push((id.address.clone(), 10_000_000_000_000_000_000));
+		}
 		let session_keys = SessionKeys {
 			babe: babe.address,
 			grandpa: gran.address,
