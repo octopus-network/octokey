@@ -135,7 +135,7 @@ fn main() {
 				.runtime
 				.balances
 				.balances
-				.push((id.address.clone(), 60_000_000_000_000_000_000));
+				.push((id.address.clone(), 510_000_000_000_000_000_000));
 			chainspec.genesis.runtime.sudo = Sudo { key: id.address.clone() };
 		} else {
 			chainspec
@@ -162,7 +162,7 @@ fn main() {
 			.runtime
 			.octopus_appchain
 			.validators
-			.push((id.address, 100_000_000_000_000_000_000));
+			.push((id.address, 10_000_000_000_000_000_000_000));
 	}
 
 	let chainspec_path = base_path.join("keys_chainspec");
@@ -190,14 +190,14 @@ fn generate_key(backup_path: &PathBuf, octoup_path: &PathBuf, typ: &str, scheme:
 		match line.trim() {
 			line if line.starts_with("Secret seed:") => {
 				key.secret_seed = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
-			}
+			},
 			line if line.starts_with("Public key (hex):") => {
 				key.public_key = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
-			}
+			},
 			line if line.starts_with("Public key (SS58):") => {
 				key.address = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
-			}
-			_ => {}
+			},
+			_ => {},
 		}
 	}
 	if typ != "validator" {
