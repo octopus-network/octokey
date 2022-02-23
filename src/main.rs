@@ -3,9 +3,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
+use tinytemplate::TinyTemplate;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ChainSpec {
+	boot_nodes: Vec<String>,
 	genesis: Genesis,
 }
 
@@ -52,6 +55,35 @@ struct OctopusAppchain {
 	validators: Vec<(String, u128)>,
 }
 
+#[derive(Debug, Default, Serialize)]
+struct Context {
+	nodes: Vec<Node>,
+	keys: Vec<Keys>,
+}
+
+static TEMPLATE: &'static str = r#"
+keys_octoup_node = [
+{{ - for node in nodes }}
+        \{
+            node-key = "{ node.node_key }",
+            peer-id = "{ node.peer_id }"
+        }{{ if not @last }},{{ endif }}
+{{ - endfor }}
+]
+
+keys_octoup_session = [
+{{ - for key in keys}}
+        \{
+            "babe.json" = "\{\n  \"jsonrpc\":\"2.0\",\n  \"id\":1,\n  \"method\":\"author_insertKey\",\n  \"params\": [\n    \"babe\",\n    \"{ key.babe.secret_seed }\",\n    \"{ key.babe.public_key }\"\n  ]\n}",
+            "beef.json" = "\{\n  \"jsonrpc\":\"2.0\",\n  \"id\":1,\n  \"method\":\"author_insertKey\",\n  \"params\": [\n    \"beef\",\n    \"{ key.beef.secret_seed }\",\n    \"{ key.beef.public_key }\"\n  ]\n}",
+            "gran.json" = "\{\n  \"jsonrpc\":\"2.0\",\n  \"id\":1,\n  \"method\":\"author_insertKey\",\n  \"params\": [\n    \"gran\",\n    \"{ key.gran.secret_seed }\",\n    \"{ key.gran.public_key }\"\n  ]\n}",
+            "imon.json" = "\{\n  \"jsonrpc\":\"2.0\",\n  \"id\":1,\n  \"method\":\"author_insertKey\",\n  \"params\": [\n    \"imon\",\n    \"{ key.imon.secret_seed }\",\n    \"{ key.imon.public_key }\"\n  ]\n}",
+            "octo.json" = "\{\n  \"jsonrpc\":\"2.0\",\n  \"id\":1,\n  \"method\":\"author_insertKey\",\n  \"params\": [\n    \"octo\",\n    \"{ key.octo.secret_seed }\",\n    \"{ key.octo.public_key }\"\n  ]\n}"
+        }{{ if not @last }},{{ endif }}
+{{ - endfor }}
+]
+"#;
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
 struct Opt {
@@ -67,6 +99,14 @@ struct Opt {
 	#[structopt(short, long, parse(from_occurrences))]
 	verbose: u8,
 
+	/// Appchain id
+	#[structopt(short, long)]
+	appchain_id: String,
+
+	/// For testnet
+	#[structopt(short, long)]
+	testnet: bool,
+
 	/// Number of validators
 	#[structopt(short, long, default_value = "4")]
 	number: u32,
@@ -76,11 +116,26 @@ struct Opt {
 	output: PathBuf,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Serialize)]
 struct Key {
 	secret_seed: String,
 	public_key: String,
 	address: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize)]
+struct Keys {
+	babe: Key,
+	gran: Key,
+	imon: Key,
+	beef: Key,
+	octo: Key,
+}
+
+#[derive(Debug, Default, Serialize)]
+struct Node {
+	node_key: String,
+	peer_id: String,
 }
 
 fn main() {
@@ -97,22 +152,30 @@ fn main() {
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
 	println!("{} detected.", s.trim());
+	let mut tt = TinyTemplate::new();
+	tt.add_template("launch", TEMPLATE).unwrap();
+	let mut context = Context::default();
 
 	let mut chainspec = ChainSpec::default();
 	let base_path = opt.output.join("keys");
 	for i in 0..opt.number {
 		let backup_path = base_path.join("keys_backup").join(format!("{}", i));
-		let octoup_path = base_path.join("keys_octoup").join(format!("{}", i));
 
 		fs::create_dir_all(&backup_path).unwrap();
-		fs::create_dir_all(&octoup_path).unwrap();
 
-		let id = generate_key(&backup_path, &octoup_path, "validator", "sr25519");
-		let babe = generate_key(&backup_path, &octoup_path, "babe", "sr25519");
-		let gran = generate_key(&backup_path, &octoup_path, "gran", "ed25519");
-		let imon = generate_key(&backup_path, &octoup_path, "imon", "sr25519");
-		let beef = generate_key(&backup_path, &octoup_path, "beef", "ecdsa");
-		let octo = generate_key(&backup_path, &octoup_path, "octo", "sr25519");
+		let id = generate_key(&backup_path, "validator", "sr25519");
+		let babe = generate_key(&backup_path, "babe", "sr25519");
+		let gran = generate_key(&backup_path, "gran", "ed25519");
+		let imon = generate_key(&backup_path, "imon", "sr25519");
+		let beef = generate_key(&backup_path, "beef", "ecdsa");
+		let octo = generate_key(&backup_path, "octo", "sr25519");
+		context.keys.push(Keys {
+			babe: babe.clone(),
+			gran: gran.clone(),
+			imon: imon.clone(),
+			beef: beef.clone(),
+			octo: octo.clone(),
+		});
 
 		let output = Command::new("subkey")
 			.arg("generate-node-key")
@@ -121,14 +184,22 @@ fn main() {
 			.output()
 			.expect("failed to execute process");
 		fs::write(backup_path.join("peer-id"), output.stderr.clone()).unwrap();
-		fs::copy(backup_path.join("node-key"), octoup_path.join("node-key")).unwrap();
-		fs::copy(backup_path.join("peer-id"), octoup_path.join("peer-id")).unwrap();
+		let node_key = fs::read_to_string(backup_path.join("node-key"))
+			.expect("Something went wrong reading node-key");
 
 		let s = match std::str::from_utf8(&output.stderr) {
 			Ok(v) => v,
 			Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 		};
-		let _peer_id = s.trim().to_string();
+		let peer_id = s.trim().to_string();
+		context.nodes.push(Node { node_key, peer_id: peer_id.clone() });
+		chainspec.boot_nodes.push(format!(
+			"/dns/bootnode-v1-{}.{}.{}.octopus.network/tcp/30333/ws/p2p/{}",
+			i,
+			opt.appchain_id,
+			if opt.testnet { "testnet" } else { "mainnet" },
+			peer_id
+		));
 		if i == 0 {
 			chainspec
 				.genesis
@@ -165,13 +236,15 @@ fn main() {
 			.push((id.address, 10_000_000_000_000_000_000_000));
 	}
 
-	let chainspec_path = base_path.join("keys_chainspec");
-	fs::create_dir_all(&chainspec_path).unwrap();
 	let json = serde_json::to_string_pretty(&chainspec).unwrap();
-	fs::write(chainspec_path.join("chainspec.json"), json).unwrap();
+	fs::write(base_path.join("chainspec-snippet.json"), json).unwrap();
+
+	let rendered = tt.render("launch", &context).unwrap();
+	println!("{}", rendered);
+	fs::write(base_path.join("appchain-launch.hcl"), rendered).unwrap();
 }
 
-fn generate_key(backup_path: &PathBuf, octoup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
+fn generate_key(backup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
 	let output = Command::new("subkey")
 		.arg("generate")
 		.arg("--scheme")
@@ -214,7 +287,7 @@ fn generate_key(backup_path: &PathBuf, octoup_path: &PathBuf, typ: &str, scheme:
 }}"#,
 			typ, key.secret_seed, key.public_key
 		);
-		fs::write(octoup_path.join(format!("{}.json", typ)), json).unwrap();
+		fs::write(backup_path.join(format!("{}.json", typ)), json).unwrap();
 	}
 	key
 }
