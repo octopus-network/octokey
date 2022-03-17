@@ -4,86 +4,73 @@ octokey is a tool for handling substrate keys.
 
 The files in the keys_backup are backups for octopus team.
 
-The files in the keys_octoup are necessary to run octoup.
+The file **appchain-launch.hcl** is used to deploy bootnodes by the terraform cloud.
 
-The file in the keys_chainspec is used to update chainspec.json
+The file **chainspec-snippet.json** is used to update chainspec.json.
 
 ```
-$ cargo run
+$ cargo run -- --appchain-id <AppchainID> --testnet
 $ tree keys/
 keys/
-├── keys_backup
-│   ├── 0
-│   │   ├── babe
-│   │   ├── beef
-│   │   ├── gran
-│   │   ├── imon
-│   │   ├── node-key
-│   │   ├── octo
-│   │   ├── peer-id
-│   │   └── validator
-│   ├── 1
-│   │   ├── babe
-│   │   ├── beef
-│   │   ├── gran
-│   │   ├── imon
-│   │   ├── node-key
-│   │   ├── octo
-│   │   ├── peer-id
-│   │   └── validator
-│   ├── 2
-│   │   ├── babe
-│   │   ├── beef
-│   │   ├── gran
-│   │   ├── imon
-│   │   ├── node-key
-│   │   ├── octo
-│   │   ├── peer-id
-│   │   └── validator
-│   └── 3
-│       ├── babe
-│       ├── beef
-│       ├── gran
-│       ├── imon
-│       ├── node-key
-│       ├── octo
-│       ├── peer-id
-│       └── validator
-├── keys_chainspec
-│   └── chainspec.json
-└── keys_octoup
+├── appchain-launch.hcl
+├── chainspec-snippet.json
+└── keys_backup
     ├── 0
+    │   ├── babe
     │   ├── babe.json
+    │   ├── beef
     │   ├── beef.json
+    │   ├── gran
     │   ├── gran.json
+    │   ├── imon
     │   ├── imon.json
     │   ├── node-key
+    │   ├── octo
     │   ├── octo.json
-    │   └── peer-id
+    │   ├── peer-id
+    │   └── validator
     ├── 1
+    │   ├── babe
     │   ├── babe.json
+    │   ├── beef
     │   ├── beef.json
+    │   ├── gran
     │   ├── gran.json
+    │   ├── imon
     │   ├── imon.json
     │   ├── node-key
+    │   ├── octo
     │   ├── octo.json
-    │   └── peer-id
+    │   ├── peer-id
+    │   └── validator
     ├── 2
+    │   ├── babe
     │   ├── babe.json
+    │   ├── beef
     │   ├── beef.json
+    │   ├── gran
     │   ├── gran.json
+    │   ├── imon
     │   ├── imon.json
     │   ├── node-key
+    │   ├── octo
     │   ├── octo.json
-    │   └── peer-id
+    │   ├── peer-id
+    │   └── validator
     └── 3
+        ├── babe
         ├── babe.json
+        ├── beef
         ├── beef.json
+        ├── gran
         ├── gran.json
+        ├── imon
         ├── imon.json
         ├── node-key
+        ├── octo
         ├── octo.json
-        └── peer-id
+        ├── peer-id
+        └── validator
 
-11 directories, 61 files
+5 directories, 54 files
 ```
