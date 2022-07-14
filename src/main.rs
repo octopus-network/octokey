@@ -24,6 +24,7 @@ struct Runtime {
 	octopus_appchain: OctopusAppchain,
 	session: Session,
 	sudo: Sudo,
+	anchor_contract: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -193,6 +194,12 @@ fn main() {
 		};
 		let peer_id = s.trim().to_string();
 		context.nodes.push(Node { node_key, peer_id: peer_id.clone() });
+		let mut anchor_contract = opt.appchain_id.clone();
+		if opt.testnet {
+			anchor_contract.push_str(".registry.test_oct.testnet");
+		} else {
+			anchor_contract.push_str(".octopus-registry.near");
+		}
 		chainspec.boot_nodes.push(format!(
 			"/dns/bootnode-v1-{}.{}.{}.octopus.network/tcp/30333/ws/p2p/{}",
 			i,
@@ -208,6 +215,7 @@ fn main() {
 				.balances
 				.push((id.address.clone(), 510_000_000_000_000_000_000));
 			chainspec.genesis.runtime.sudo = Sudo { key: id.address.clone() };
+			chainspec.genesis.runtime.anchor_contract = anchor_contract;
 		} else {
 			chainspec
 				.genesis
