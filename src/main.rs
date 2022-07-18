@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
+use std::{fs, path::PathBuf, process::Command};
 use structopt::StructOpt;
 use tinytemplate::TinyTemplate;
 
@@ -108,6 +106,10 @@ struct Opt {
 	#[structopt(short, long)]
 	testnet: bool,
 
+	/// For EVM template
+	#[structopt(short, long)]
+	evm: bool,
+
 	/// Number of validators
 	#[structopt(short, long, default_value = "4")]
 	number: u32,
@@ -144,7 +146,7 @@ fn main() {
 	println!("{:#?}", opt);
 	if opt.number < 1 {
 		println!("The number of validators should be greater than 1.");
-		return;
+		return
 	}
 
 	let output = Command::new("subkey").arg("-V").output().expect("command subkey not found");
@@ -153,6 +155,16 @@ fn main() {
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
 	println!("{} detected.", s.trim());
+
+	if opt.evm {
+		let output = Command::new("moonkey").arg("-h").output().expect("command moonkey not found");
+		let s = match std::str::from_utf8(&output.stdout) {
+			Ok(v) => v.lines().next().unwrap(),
+			Err(e) => panic!("Invalid output of moonkey -h: {}", e),
+		};
+		println!("{} detected.", s.trim());
+	}
+
 	let mut tt = TinyTemplate::new();
 	tt.add_template("launch", TEMPLATE).unwrap();
 	let mut context = Context::default();
@@ -164,12 +176,21 @@ fn main() {
 
 		fs::create_dir_all(&backup_path).unwrap();
 
-		let id = generate_key(&backup_path, "validator", "sr25519");
-		let babe = generate_key(&backup_path, "babe", "sr25519");
-		let gran = generate_key(&backup_path, "gran", "ed25519");
-		let imon = generate_key(&backup_path, "imon", "sr25519");
-		let beef = generate_key(&backup_path, "beef", "ecdsa");
-		let octo = generate_key(&backup_path, "octo", "sr25519");
+		let babe = subkey(&backup_path, "babe", "sr25519");
+		let gran = subkey(&backup_path, "gran", "ed25519");
+		let imon = subkey(&backup_path, "imon", "sr25519");
+		let beef = subkey(&backup_path, "beef", "ecdsa");
+		let octo = if opt.evm {
+			subkey(&backup_path, "octo", "ecdsa")
+		} else {
+			subkey(&backup_path, "octo", "sr25519")
+		};
+		let id = if opt.evm {
+			moonkey(&backup_path, "validator", "ecdsa")
+		} else {
+			subkey(&backup_path, "validator", "sr25519")
+		};
+
 		context.keys.push(Keys {
 			babe: babe.clone(),
 			gran: gran.clone(),
@@ -241,7 +262,7 @@ fn main() {
 			.runtime
 			.octopus_appchain
 			.validators
-			.push((id.address, 10_000_000_000_000_000_000_000));
+			.push((id.address, 50_000_000_000_000_000_000_000));
 	}
 
 	let json = serde_json::to_string_pretty(&chainspec).unwrap();
@@ -252,7 +273,7 @@ fn main() {
 	fs::write(base_path.join("appchain-launch.hcl"), rendered).unwrap();
 }
 
-fn generate_key(backup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
+fn subkey(backup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
 	let output = Command::new("subkey")
 		.arg("generate")
 		.arg("--scheme")
@@ -296,6 +317,56 @@ fn generate_key(backup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
 			typ, key.secret_seed, key.public_key
 		);
 		fs::write(backup_path.join(format!("{}.json", typ)), json).unwrap();
+	}
+	key
+}
+
+fn moonkey(backup_path: &PathBuf, typ: &str, scheme: &str) -> Key {
+	let mut key = Key::default();
+
+	let output = Command::new("moonkey").arg("-w").output().expect("failed to execute process");
+	fs::write(backup_path.join(typ), output.stdout.clone()).unwrap();
+
+	let s = match std::str::from_utf8(&output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+	let lines = s.trim().lines();
+	for line in lines {
+		match line.trim() {
+			line if line.starts_with("Private Key:") => {
+				key.secret_seed = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
+			},
+			line if line.starts_with("Public key (hex):") => {
+				key.public_key = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
+			},
+			line if line.starts_with("Address:") => {
+				key.address = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
+			},
+			_ => {},
+		}
+	}
+
+	let output = Command::new("subkey")
+		.arg("inspect")
+		.arg("--scheme")
+		.arg(scheme)
+		.arg(key.secret_seed.clone())
+		.output()
+		.expect("failed to execute process");
+
+	let s = match std::str::from_utf8(&output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+	let lines = s.trim().lines();
+	for line in lines {
+		match line.trim() {
+			line if line.starts_with("Public key (hex):") => {
+				key.public_key = line.split(":").collect::<Vec<&str>>()[1].trim().to_string();
+			},
+			_ => {},
+		}
 	}
 	key
 }
