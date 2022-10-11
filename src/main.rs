@@ -257,12 +257,30 @@ fn main() {
 			id.address.clone(),
 			session_keys,
 		));
-		chainspec
+		if opt.testnet {
+			if i == 3 {
+				chainspec
+				.genesis
+				.runtime
+				.octopus_appchain
+				.validators
+				.push((id.address, 30_000_000_000_000_000_000_000));				
+			} else {
+				chainspec
+				.genesis
+				.runtime
+				.octopus_appchain
+				.validators
+				.push((id.address, 10_000_000_000_000_000_000_000));
+			}
+		} else {
+			chainspec
 			.genesis
 			.runtime
 			.octopus_appchain
 			.validators
 			.push((id.address, 50_000_000_000_000_000_000_000));
+		}
 	}
 
 	let json = serde_json::to_string_pretty(&chainspec).unwrap();
